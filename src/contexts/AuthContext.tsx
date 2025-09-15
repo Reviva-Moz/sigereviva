@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { AuthState, User, LoginCredentials, UserRole } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   register: (data: { name: string; email: string; password: string; role: UserRole }) => Promise<void>;
 }
 
@@ -54,38 +56,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('sge_user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        dispatch({ type: 'SET_USER', payload: user });
-      } catch (error) {
-        localStorage.removeItem('sge_user');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          // Fetch user profile from our profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profile) {
+            const user: User = {
+              id: profile.id,
+              email: session.user.email || '',
+              name: profile.full_name,
+              role: profile.role as UserRole,
+              avatar: profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${session.user.email}`,
+              createdAt: profile.created_at,
+              updatedAt: profile.updated_at,
+            };
+            dispatch({ type: 'SET_USER', payload: user });
+          }
+        } else {
+          dispatch({ type: 'SET_USER', payload: null });
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profile) {
+          const user: User = {
+            id: profile.id,
+            email: session.user.email || '',
+            name: profile.full_name,
+            role: profile.role as UserRole,
+            avatar: profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${session.user.email}`,
+            createdAt: profile.created_at,
+            updatedAt: profile.updated_at,
+          };
+          dispatch({ type: 'SET_USER', payload: user });
+        }
+      } else {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Simulação de login - substituir por integração real com Supabase
-      const mockUser: User = {
-        id: '1',
+      const { error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
-        name: credentials.email === 'admin@sge.mz' ? 'Administrador SGE' : 'Usuário SGE',
-        role: credentials.email === 'admin@sge.mz' ? 'DIRETORIA' : 'PROFESSOR',
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${credentials.email}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        password: credentials.password,
+      });
 
-      localStorage.setItem('sge_user', JSON.stringify(mockUser));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: mockUser });
+      if (error) throw error;
+      
+      // User state will be updated via the auth state change listener
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
@@ -96,27 +136,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Simulação de registro - substituir por integração real com Supabase
-      const newUser: User = {
-        id: Date.now().toString(),
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
         email: data.email,
-        name: data.name,
-        role: data.role,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${data.email}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: data.name,
+            role: data.role,
+          }
+        }
+      });
 
-      localStorage.setItem('sge_user', JSON.stringify(newUser));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: newUser });
+      if (error) throw error;
+      
+      // User state will be updated via the auth state change listener
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('sge_user');
+  const logout = async () => {
+    await supabase.auth.signOut();
     dispatch({ type: 'LOGOUT' });
   };
 

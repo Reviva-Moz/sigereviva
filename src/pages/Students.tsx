@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Filter, Download, MoreVertical } from 'lucide-react';
+import { Search, Plus, Filter, Download, MoreVertical, Loader2 } from 'lucide-react';
+import { useStudents } from '@/hooks/useStudents';
+import { useToast } from '@/hooks/use-toast';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,15 +92,32 @@ export default function Students() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const { toast } = useToast();
 
-  const filteredStudents = mockStudents.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = !selectedClass || student.class === selectedClass;
-    const matchesStatus = !selectedStatus || student.status === selectedStatus;
+  // Fetch students from database
+  const { data: students, isLoading, error } = useStudents();
+
+  // Use mock data as fallback or if no students in database
+  const studentsData = students && students.length > 0 ? students : mockStudents;
+
+  const filteredStudents = studentsData.filter((student: any) => {
+    const name = student.full_name || student.name || '';
+    const email = student.email || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = !selectedClass || (student.class || student.grade_level) === selectedClass;
+    const matchesStatus = !selectedStatus || (student.status || 'ativo') === selectedStatus;
     
     return matchesSearch && matchesClass && matchesStatus;
   });
+
+  if (error) {
+    toast({
+      title: "Erro ao carregar estudantes",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -221,18 +240,24 @@ export default function Students() {
 
               {/* Tabela de estudantes */}
               <div className="rounded-lg border border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Estudante</TableHead>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead>Classe</TableHead>
-                      <TableHead>Encarregado</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                {isLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Carregando estudantes...</span>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Estudante</TableHead>
+                        <TableHead>Contacto</TableHead>
+                        <TableHead>Classe</TableHead>
+                        <TableHead>Encarregado</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                     {filteredStudents.map((student, index) => (
                       <motion.tr
                         key={student.id}
@@ -244,37 +269,40 @@ export default function Students() {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
-                              <AvatarImage src={student.avatar} alt={student.name} />
+                              <AvatarImage 
+                                src={(student as any).photo_url || (student as any).avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${(student as any).full_name || (student as any).name}`} 
+                                alt={(student as any).full_name || (student as any).name} 
+                              />
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {student.name.split(' ').map(n => n[0]).join('')}
+                                {((student as any).full_name || (student as any).name)?.split(' ').map((n: string) => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-foreground">{student.name}</p>
-                              <p className="text-sm text-muted-foreground">{student.email}</p>
+                              <p className="font-medium text-foreground">{(student as any).full_name || (student as any).name}</p>
+                              <p className="text-sm text-muted-foreground">{(student as any).email || 'Sem email'}</p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <p className="text-foreground">{student.phone}</p>
+                            <p className="text-foreground">{(student as any).phone || 'Sem telefone'}</p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <p className="font-medium text-foreground">{student.class}</p>
-                            <p className="text-muted-foreground">Turma {student.section}</p>
+                            <p className="font-medium text-foreground">{(student as any).class || 'Não definido'}</p>
+                            <p className="text-muted-foreground">Turma {(student as any).section || 'A'}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <p className="text-sm text-foreground">{student.guardian}</p>
+                          <p className="text-sm text-foreground">{(student as any).guardian || (student as any).emergency_contact_name || 'Não informado'}</p>
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            className={`${getStatusColor(student.status)} capitalize`}
+                            className={`${getStatusColor((student as any).status || 'ativo')} capitalize`}
                             variant="secondary"
                           >
-                            {student.status}
+                            {(student as any).status || 'ativo'}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -298,6 +326,7 @@ export default function Students() {
                     ))}
                   </TableBody>
                 </Table>
+                )}
               </div>
 
               {/* Paginação */}
