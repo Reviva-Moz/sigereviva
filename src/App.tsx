@@ -6,7 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginForm } from "./components/auth/LoginForm";
 import Dashboard from "./pages/Dashboard";
-import Students from "./pages/Students";
+import { Students } from "./pages/Students";
+import { StudentDetail } from "./pages/StudentDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,10 +49,18 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/estudantes"
+        path="/students"
         element={
           <ProtectedRoute>
             <Students />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/students/:id"
+        element={
+          <ProtectedRoute>
+            <StudentDetail />
           </ProtectedRoute>
         }
       />
