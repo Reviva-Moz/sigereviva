@@ -8,6 +8,8 @@ import { LoginForm } from "./components/auth/LoginForm";
 import Dashboard from "./pages/Dashboard";
 import { Students } from "./pages/Students";
 import { StudentDetail } from "./pages/StudentDetail";
+import Teachers from "./pages/Teachers";
+import Turmas from "./pages/Turmas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,24 +66,19 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      {/* Rotas para outras páginas */}
       <Route
-        path="/professores"
+        path="/teachers"
         element={
           <ProtectedRoute>
-            <div className="min-h-screen flex items-center justify-center">
-              <p>Página de Professores (em desenvolvimento)</p>
-            </div>
+            <Teachers />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/classes"
+        path="/turmas"
         element={
           <ProtectedRoute>
-            <div className="min-h-screen flex items-center justify-center">
-              <p>Página de Classes (em desenvolvimento)</p>
-            </div>
+            <Turmas />
           </ProtectedRoute>
         }
       />
