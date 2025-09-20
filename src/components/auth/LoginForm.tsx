@@ -140,15 +140,20 @@ export function LoginForm() {
               </p>
             </div>
 
-            {/* Credenciais de teste */}
+            {/* Cadastro de novos usuários */}
             <div className="mt-6 p-4 bg-accent rounded-lg">
               <p className="text-xs text-accent-foreground font-medium mb-2">
-                Credenciais de teste:
+                Para criar uma conta:
               </p>
-              <p className="text-xs text-accent-foreground">
-                <strong>Admin:</strong> admin@sge.mz / 123456<br />
-                <strong>Professor:</strong> professor@sge.mz / 123456
-              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => window.location.href = '/register'}
+              >
+                Registrar Nova Conta
+              </Button>
             </div>
           </CardContent>
         </Card>
