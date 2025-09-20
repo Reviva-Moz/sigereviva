@@ -12,6 +12,7 @@ import { StudentDetail } from "./pages/StudentDetail";
 import Teachers from "./pages/Teachers";
 import Turmas from "./pages/Turmas";
 import NotFound from "./pages/NotFound";
+import DevSeed from "./pages/DevSeed";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/dev/seed" element={<DevSeed />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
