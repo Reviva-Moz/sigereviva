@@ -13,6 +13,7 @@ import Teachers from "./pages/Teachers";
 import Turmas from "./pages/Turmas";
 import NotFound from "./pages/NotFound";
 import DevSeed from "./pages/DevSeed";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Turmas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/configuracoes"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />

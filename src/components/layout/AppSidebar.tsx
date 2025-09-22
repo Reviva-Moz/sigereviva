@@ -43,19 +43,19 @@ const navigationItems = [
   },
   {
     title: 'Estudantes',
-    url: '/estudantes',
+    url: '/students',
     icon: Users,
     permissions: ['students', '*']
   },
   {
     title: 'Professores',
-    url: '/professores',
+    url: '/teachers',
     icon: UserCheck,
     permissions: ['teachers', '*']
   },
   {
     title: 'Classes & Turmas',
-    url: '/classes',
+    url: '/turmas',
     icon: Building2,
     permissions: ['classes', '*']
   },
