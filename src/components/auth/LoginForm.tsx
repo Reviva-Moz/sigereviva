@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -155,6 +156,13 @@ export function LoginForm() {
                 Registrar Nova Conta
               </Button>
             </div>
+            {/* Dev seed helper */}
+            <p className="mt-4 text-xs text-muted-foreground text-center">
+              Problemas para entrar?{' '}
+              <Link to="/dev/seed" className="text-primary hover:underline font-medium">
+                Criar usuários de teste
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </motion.div>

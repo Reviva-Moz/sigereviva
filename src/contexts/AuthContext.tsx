@@ -56,57 +56,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          // Fetch user profile from our profiles table
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (profile) {
-            const user: User = {
-              id: profile.id,
-              email: session.user.email || '',
-              name: profile.full_name,
-              role: profile.role as UserRole,
-              avatar: profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${session.user.email}`,
-              createdAt: profile.created_at,
-              updatedAt: profile.updated_at,
-            };
-            dispatch({ type: 'SET_USER', payload: user });
-          }
-        } else {
-          dispatch({ type: 'SET_USER', payload: null });
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const handleSession = (session: Session | null) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+        // Defer Supabase calls to avoid deadlocks inside auth listener
+        setTimeout(async () => {
+          try {
+            const userId = session.user!.id;
+            const email = session.user!.email || '';
 
-        if (profile) {
-          const user: User = {
-            id: profile.id,
-            email: session.user.email || '',
-            name: profile.full_name,
-            role: profile.role as UserRole,
-            avatar: profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${session.user.email}`,
-            createdAt: profile.created_at,
-            updatedAt: profile.updated_at,
-          };
-          dispatch({ type: 'SET_USER', payload: user });
-        }
+            // Try to fetch existing profile
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            let finalProfile = profile;
+            if (!finalProfile) {
+              // Create profile from auth metadata as fallback
+              const full_name = (session.user.user_metadata?.full_name as string) || email;
+              const role = ((session.user.user_metadata?.role as UserRole) || 'PROFESSOR') as UserRole;
+              const { data: inserted } = await supabase
+                .from('profiles')
+                .insert({ user_id: userId, full_name, role })
+                .select('*')
+                .single();
+              finalProfile = inserted || null;
+            }
+
+            if (finalProfile) {
+              const user: User = {
+                id: finalProfile.id,
+                email,
+                name: finalProfile.full_name,
+                role: finalProfile.role as UserRole,
+                avatar: finalProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
+                createdAt: finalProfile.created_at,
+                updatedAt: finalProfile.updated_at,
+              };
+              dispatch({ type: 'SET_USER', payload: user });
+            } else {
+              dispatch({ type: 'SET_LOADING', payload: false });
+            }
+          } catch {
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        }, 0);
       } else {
+        dispatch({ type: 'SET_USER', payload: null });
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      handleSession(session);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session);
+      if (!session) {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     });
