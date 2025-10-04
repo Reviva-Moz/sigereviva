@@ -23,30 +23,66 @@ export default function Settings() {
   // Verificar se o usuário é admin
   const isAdmin = user?.email === 'admin@reviva.mz';
 
-  // Buscar todos os perfis (apenas para admin)
+  // Buscar todos os perfis com seus roles (apenas para admin)
   const { data: profiles, refetch } = useSupabaseQuery(
-    ['all-profiles'],
+    ['all-profiles-with-roles'],
     async () => {
       if (!isAdmin) return { data: null, error: null };
       
-      const { data, error } = await supabase
+      // Buscar perfis
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('full_name');
-      return { data, error };
+      
+      if (profilesError || !profilesData) return { data: null, error: profilesError };
+      
+      // Buscar roles para cada perfil
+      const profilesWithRoles = await Promise.all(
+        profilesData.map(async (profile) => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id)
+            .maybeSingle();
+          
+          return {
+            ...profile,
+            role: roleData?.role || 'PROFESSOR'
+          };
+        })
+      );
+      
+      return { data: profilesWithRoles, error: null };
     },
     { enabled: isAdmin }
   );
 
-  // Mutation para atualizar role
+  // Mutation para atualizar role na tabela user_roles
   const updateRoleMutation = useSupabaseMutation(
     async (variables: { userId: string; role: UserRole }) => {
-      const { data, error } = await supabase
+      // Primeiro, buscar o user_id do perfil
+      const { data: profile } = await supabase
         .from('profiles')
-        .update({ role: variables.role })
+        .select('user_id')
         .eq('id', variables.userId)
+        .single();
+      
+      if (!profile) throw new Error('Perfil não encontrado');
+      
+      // Deletar role antiga
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', profile.user_id);
+      
+      // Inserir nova role
+      const { data, error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: profile.user_id, role: variables.role })
         .select()
         .single();
+      
       return { data, error };
     },
     {
@@ -58,7 +94,7 @@ export default function Settings() {
         refetch();
         setSelectedUserId('');
       },
-      invalidateQueries: [['all-profiles']],
+      invalidateQueries: [['all-profiles-with-roles']],
     }
   );
 

@@ -64,35 +64,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userId = session.user!.id;
             const email = session.user!.email || '';
 
-            // Try to fetch existing profile
+            // Buscar perfil e role separadamente
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', userId)
               .maybeSingle();
 
-            let finalProfile = profile;
-            if (!finalProfile) {
-              // Create profile from auth metadata as fallback
-              const full_name = (session.user.user_metadata?.full_name as string) || email;
-              const role = ((session.user.user_metadata?.role as UserRole) || 'PROFESSOR') as UserRole;
-              const { data: inserted } = await supabase
-                .from('profiles')
-                .insert({ user_id: userId, full_name, role })
-                .select('*')
-                .single();
-              finalProfile = inserted || null;
-            }
+            const { data: userRole } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', userId)
+              .maybeSingle();
 
-            if (finalProfile) {
+            if (profile && userRole) {
               const user: User = {
-                id: finalProfile.id,
+                id: profile.id,
                 email,
-                name: finalProfile.full_name,
-                role: finalProfile.role as UserRole,
-                avatar: finalProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
-                createdAt: finalProfile.created_at,
-                updatedAt: finalProfile.updated_at,
+                name: profile.full_name,
+                role: userRole.role as UserRole,
+                avatar: profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
+                createdAt: profile.created_at,
+                updatedAt: profile.updated_at,
               };
               dispatch({ type: 'SET_USER', payload: user });
             } else {
