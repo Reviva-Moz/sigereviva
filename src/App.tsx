@@ -11,6 +11,7 @@ import { Students } from "./pages/Students";
 import { StudentDetail } from "./pages/StudentDetail";
 import Teachers from "./pages/Teachers";
 import Turmas from "./pages/Turmas";
+import Evaluations from "./pages/Evaluations";
 import NotFound from "./pages/NotFound";
 import DevSeed from "./pages/DevSeed";
 import Settings from "./pages/Settings";
@@ -86,6 +87,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Turmas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/avaliacoes"
+        element={
+          <ProtectedRoute>
+            <Evaluations />
           </ProtectedRoute>
         }
       />

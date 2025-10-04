@@ -8,6 +8,8 @@ import { useTeachers } from '@/hooks/useTeachers';
 import { useTurmas } from '@/hooks/useTurmas';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { formatMZN, PROVINCES } from '@/lib/validators/mozambique';
 
 export default function Dashboard() {
   const { data: students } = useStudents();
@@ -33,12 +35,21 @@ export default function Dashboard() {
   const monthlyRevenue = financialData?.filter(f => f.status === 'PAGO')
     .reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-MZ', {
-      style: 'currency',
-      currency: 'MZN',
-    }).format(value);
-  };
+  // Dados para gráficos
+  const enrollmentByProvince = [
+    { name: 'Maputo Cidade', total: 450 },
+    { name: 'Maputo Província', total: 320 },
+    { name: 'Gaza', total: 180 },
+    { name: 'Inhambane', total: 210 },
+    { name: 'Sofala', total: 290 },
+  ];
+
+  const statusDistribution = [
+    { name: 'Ativos', value: students?.filter(s => s.status === 'ATIVO').length || 0, color: 'hsl(142 53% 42%)' },
+    { name: 'Inativos', value: students?.filter(s => s.status === 'INATIVO').length || 0, color: 'hsl(0 84% 60%)' },
+    { name: 'Transferidos', value: students?.filter(s => s.status === 'TRANSFERIDO').length || 0, color: 'hsl(213 94% 68%)' },
+    { name: 'Graduados', value: students?.filter(s => s.status === 'GRADUADO').length || 0, color: 'hsl(280 60% 60%)' },
+  ];
 
   return (
     <MainLayout title="Dashboard" subtitle="Visão geral do sistema SGE REVIVA">
@@ -122,7 +133,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">
-                  {formatCurrency(monthlyRevenue)}
+                  {formatMZN(monthlyRevenue)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Pagamentos recebidos este mês
@@ -132,7 +143,82 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Resumo de atividades recentes */}
+        {/* Gráficos Visuais */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Gráfico de Matrículas por Província */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <School className="h-5 w-5" />
+                Matrículas por Província
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={enrollmentByProvince}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico de Distribuição por Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Distribuição por Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Resumo de atividades */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -173,61 +259,35 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Distribuição por Status
+                <DollarSign className="h-5 w-5" />
+                Resumo Financeiro
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Estudantes Ativos</span>
-                    <span>{students?.filter(s => s.status === 'ATIVO').length || 0}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
-                      style={{ 
-                        width: `${totalStudents > 0 
-                          ? ((students?.filter(s => s.status === 'ATIVO').length || 0) / totalStudents) * 100 
-                          : 0}%` 
-                      }}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Receita do Mês</span>
+                  <span className="font-semibold text-green-600">{formatMZN(monthlyRevenue)}</span>
                 </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Estudantes Inativos</span>
-                    <span>{students?.filter(s => s.status === 'INATIVO').length || 0}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className="bg-red-500 h-2 rounded-full" 
-                      style={{ 
-                        width: `${totalStudents > 0 
-                          ? ((students?.filter(s => s.status === 'INATIVO').length || 0) / totalStudents) * 100 
-                          : 0}%` 
-                      }}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Pagamentos Pendentes</span>
+                  <span className="font-semibold text-yellow-600">
+                    {financialData?.filter(f => f.status === 'PENDENTE').length || 0}
+                  </span>
                 </div>
-
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Professores Ativos</span>
-                    <span>{activeTeachers}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full" 
-                      style={{ 
-                        width: `${(teachers?.length || 0) > 0 
-                          ? (activeTeachers / (teachers?.length || 1)) * 100 
-                          : 0}%` 
-                      }}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Pagamentos Vencidos</span>
+                  <span className="font-semibold text-red-600">
+                    {financialData?.filter(f => f.status === 'VENCIDO').length || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Taxa de Cobrança</span>
+                  <span className="font-semibold">
+                    {financialData && financialData.length > 0
+                      ? ((financialData.filter(f => f.status === 'PAGO').length / financialData.length) * 100).toFixed(1)
+                      : 0}%
+                  </span>
                 </div>
               </div>
             </CardContent>

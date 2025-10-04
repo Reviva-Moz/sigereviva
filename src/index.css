@@ -159,6 +159,44 @@ Todas as cores são HSL para consistência
   .transition-bounce {
     transition: var(--transition-bounce);
   }
+
+  /* Status badges moçambicanos */
+  .status-ativo {
+    @apply bg-green-500/10 text-green-700 border-green-200;
+  }
+
+  .status-inativo {
+    @apply bg-red-500/10 text-red-700 border-red-200;
+  }
+
+  .status-transferido {
+    @apply bg-blue-500/10 text-blue-700 border-blue-200;
+  }
+
+  .status-graduado {
+    @apply bg-purple-500/10 text-purple-700 border-purple-200;
+  }
+
+  /* Grade colors (Sistema moçambicano 0-20) */
+  .grade-excelente {
+    @apply text-green-600 font-bold;
+  }
+
+  .grade-bom {
+    @apply text-blue-600 font-bold;
+  }
+
+  .grade-suficiente {
+    @apply text-yellow-600 font-bold;
+  }
+
+  .grade-insuficiente {
+    @apply text-orange-600 font-bold;
+  }
+
+  .grade-mau {
+    @apply text-red-600 font-bold;
+  }
 }
 
 @layer base {

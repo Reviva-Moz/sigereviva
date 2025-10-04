@@ -14,17 +14,19 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/database';
 import { useCreateStudent, useUpdateStudent } from '@/hooks/useStudents';
+import { MozambiqueInput } from '@/components/shared/MozambiqueInput';
+import { biValidator, phoneValidator } from '@/lib/validators/mozambique';
 
 const studentSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   date_of_birth: z.string().optional(),
   gender: z.enum(['MASCULINO', 'FEMININO']).optional(),
-  id_number: z.string().optional(),
-  phone: z.string().optional(),
+  id_number: biValidator,
+  phone: phoneValidator,
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   address: z.string().optional(),
   emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
+  emergency_contact_phone: phoneValidator,
   health_info: z.string().optional(),
 });
 
@@ -188,21 +190,6 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
     }
   };
 
-  const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length >= 9) {
-      return `+258 ${numbers.slice(3, 5)} ${numbers.slice(5, 8)} ${numbers.slice(8, 12)}`;
-    }
-    return value;
-  };
-
-  const formatIdNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length >= 13) {
-      return `${numbers.slice(0, 5)} ${numbers.slice(5, 10)} ${numbers.slice(10, 13)}`;
-    }
-    return value;
-  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -282,15 +269,13 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
               </div>
 
               <div>
-                <Label htmlFor="id_number">Número do BI</Label>
-                <Input
+                <MozambiqueInput
                   id="id_number"
-                  {...form.register('id_number')}
-                  placeholder="##### ##### ###"
-                  onChange={(e) => {
-                    const formatted = formatIdNumber(e.target.value);
-                    form.setValue('id_number', formatted);
-                  }}
+                  label="Número do BI"
+                  mask="BI"
+                  value={form.watch('id_number') || ''}
+                  onChange={(value) => form.setValue('id_number', value)}
+                  error={form.formState.errors.id_number?.message}
                 />
               </div>
             </div>
@@ -300,15 +285,13 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
               <h3 className="text-lg font-semibold text-foreground">Informações de Contacto</h3>
               
               <div>
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
+                <MozambiqueInput
                   id="phone"
-                  {...form.register('phone')}
-                  placeholder="+258 ## ### ####"
-                  onChange={(e) => {
-                    const formatted = formatPhoneNumber(e.target.value);
-                    form.setValue('phone', formatted);
-                  }}
+                  label="Telefone"
+                  mask="PHONE"
+                  value={form.watch('phone') || ''}
+                  onChange={(value) => form.setValue('phone', value)}
+                  error={form.formState.errors.phone?.message}
                 />
               </div>
 
@@ -350,15 +333,13 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
               </div>
 
               <div>
-                <Label htmlFor="emergency_contact_phone">Telefone do Encarregado</Label>
-                <Input
+                <MozambiqueInput
                   id="emergency_contact_phone"
-                  {...form.register('emergency_contact_phone')}
-                  placeholder="+258 ## ### ####"
-                  onChange={(e) => {
-                    const formatted = formatPhoneNumber(e.target.value);
-                    form.setValue('emergency_contact_phone', formatted);
-                  }}
+                  label="Telefone do Encarregado"
+                  mask="PHONE"
+                  value={form.watch('emergency_contact_phone') || ''}
+                  onChange={(value) => form.setValue('emergency_contact_phone', value)}
+                  error={form.formState.errors.emergency_contact_phone?.message}
                 />
               </div>
             </div>
