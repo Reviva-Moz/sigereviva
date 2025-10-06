@@ -12,6 +12,8 @@ import { StudentDetail } from "./pages/StudentDetail";
 import Teachers from "./pages/Teachers";
 import Turmas from "./pages/Turmas";
 import Evaluations from "./pages/Evaluations";
+import Enrollments from "./pages/Enrollments";
+import Financial from "./pages/Financial";
 import NotFound from "./pages/NotFound";
 import DevSeed from "./pages/DevSeed";
 import Settings from "./pages/Settings";
@@ -91,10 +93,26 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/enrollments"
+        element={
+          <ProtectedRoute>
+            <Enrollments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/avaliacoes"
         element={
           <ProtectedRoute>
             <Evaluations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/financeiro"
+        element={
+          <ProtectedRoute>
+            <Financial />
           </ProtectedRoute>
         }
       />

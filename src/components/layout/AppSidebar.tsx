@@ -60,6 +60,12 @@ const navigationItems = [
     permissions: ['classes', '*']
   },
   {
+    title: 'Matrículas',
+    url: '/enrollments',
+    icon: FileText,
+    permissions: ['students', '*']
+  },
+  {
     title: 'Disciplinas',
     url: '/disciplinas',
     icon: BookOpen,
