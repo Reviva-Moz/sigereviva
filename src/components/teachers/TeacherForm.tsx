@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCreateTeacher, useUpdateTeacher } from '@/hooks/useTeachers';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
+import { CurrencyInput } from '@/components/shared/CurrencyInput';
 
 const teacherSchema = z.object({
   profile_id: z.string().min(1, 'Perfil é obrigatório'),
@@ -48,7 +49,7 @@ export function TeacherForm({ teacher, profiles, schools, onSuccess, onCancel }:
       qualification: teacher?.qualification || '',
       specialization: teacher?.specialization || '',
       hire_date: teacher?.hire_date || '',
-      salary: teacher?.salary?.toString() || '',
+      salary: teacher?.salary ? teacher.salary.toString() : '',
       status: teacher?.status || 'ATIVO',
     },
   });
@@ -61,7 +62,7 @@ export function TeacherForm({ teacher, profiles, schools, onSuccess, onCancel }:
         employee_number: data.employee_number || null,
         qualification: data.qualification || null,
         specialization: data.specialization || null,
-        salary: data.salary ? parseFloat(data.salary) : null,
+        salary: data.salary ? parseFloat(String(data.salary)) : null,
         hire_date: data.hire_date || null,
         status: data.status || 'ATIVO',
       };
@@ -192,11 +193,10 @@ export function TeacherForm({ teacher, profiles, schools, onSuccess, onCancel }:
                     <FormItem>
                       <FormLabel>Salário (MZN)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          step="0.01"
-                          {...field}
+                        <CurrencyInput
+                          value={String(field.value || '')}
+                          onChange={(value) => field.onChange(value)}
+                          placeholder="0,00 MZN"
                         />
                       </FormControl>
                       <FormMessage />

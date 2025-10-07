@@ -5,8 +5,8 @@ import { formatMZN } from '@/lib/validators/mozambique';
 
 interface CurrencyInputProps {
   label?: string;
-  value: number;
-  onChange: (value: number) => void;
+  value: string | number;
+  onChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
   placeholder?: string;
@@ -20,10 +20,10 @@ export function CurrencyInput({
   disabled = false,
   placeholder = '0.00',
 }: CurrencyInputProps) {
-  const [displayValue, setDisplayValue] = React.useState(value.toString());
+  const [displayValue, setDisplayValue] = React.useState(String(value || ''));
 
   React.useEffect(() => {
-    setDisplayValue(value.toString());
+    setDisplayValue(String(value || ''));
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,19 +39,13 @@ export function CurrencyInput({
       : sanitized;
     
     setDisplayValue(formatted);
-    
-    const numValue = parseFloat(formatted);
-    if (!isNaN(numValue)) {
-      onChange(Math.round(numValue * 100) / 100);
-    } else if (formatted === '') {
-      onChange(0);
-    }
+    onChange(formatted);
   };
 
   const handleBlur = () => {
-    // Format on blur
-    if (value > 0) {
-      setDisplayValue(value.toFixed(2));
+    const numValue = parseFloat(String(value));
+    if (!isNaN(numValue) && numValue > 0) {
+      setDisplayValue(numValue.toFixed(2));
     }
   };
 
@@ -59,9 +53,9 @@ export function CurrencyInput({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
-        {value > 0 && (
+        {parseFloat(String(value)) > 0 && (
           <span className="text-sm font-semibold text-green-600">
-            {formatMZN(value)}
+            {formatMZN(parseFloat(String(value)))}
           </span>
         )}
       </div>

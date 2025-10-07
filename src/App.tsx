@@ -14,6 +14,8 @@ import Turmas from "./pages/Turmas";
 import Evaluations from "./pages/Evaluations";
 import Enrollments from "./pages/Enrollments";
 import Financial from "./pages/Financial";
+import Subjects from "./pages/Subjects";
+import Attendance from "./pages/Attendance";
 import NotFound from "./pages/NotFound";
 import DevSeed from "./pages/DevSeed";
 import Settings from "./pages/Settings";
@@ -113,6 +115,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Financial />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/disciplinas"
+        element={
+          <ProtectedRoute>
+            <Subjects />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/presencas"
+        element={
+          <ProtectedRoute>
+            <Attendance />
           </ProtectedRoute>
         }
       />
