@@ -16,6 +16,8 @@ import Enrollments from "./pages/Enrollments";
 import Financial from "./pages/Financial";
 import Subjects from "./pages/Subjects";
 import Attendance from "./pages/Attendance";
+import Notifications from "./pages/Notifications";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import DevSeed from "./pages/DevSeed";
 import Settings from "./pages/Settings";
@@ -131,6 +133,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Attendance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notificacoes"
+        element={
+          <ProtectedRoute>
+            <Notifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/relatorios"
+        element={
+          <ProtectedRoute>
+            <Reports />
           </ProtectedRoute>
         }
       />

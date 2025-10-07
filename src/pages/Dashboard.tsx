@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Users, GraduationCap, BookOpen, DollarSign, TrendingUp, School } from 'lucide-react';
@@ -9,7 +8,8 @@ import { useTurmas } from '@/hooks/useTurmas';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { formatMZN, PROVINCES } from '@/lib/validators/mozambique';
+import { formatMZN } from '@/lib/validators/mozambique';
+import { StatsCard } from '@/components/shared/StatsCard';
 
 export default function Dashboard() {
   const { data: students } = useStudents();
@@ -56,91 +56,37 @@ export default function Dashboard() {
       <div className="space-y-6">
         {/* Cards de métricas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total de Educandos
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{totalStudents}</div>
-                <p className="text-xs text-muted-foreground">
-                  Estudantes matriculados
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Professores Ativos
-                </CardTitle>
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{activeTeachers}</div>
-                <p className="text-xs text-muted-foreground">
-                  Corpo docente ativo
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total de Turmas
-                </CardTitle>
-                <School className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{totalTurmas}</div>
-                <p className="text-xs text-muted-foreground">
-                  Turmas organizadas
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Receita Mensal
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {formatMZN(monthlyRevenue)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pagamentos recebidos este mês
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <StatsCard
+            title="Total de Educandos"
+            value={totalStudents}
+            icon={Users}
+            color="primary"
+            index={0}
+          />
+          
+          <StatsCard
+            title="Professores Ativos"
+            value={activeTeachers}
+            icon={GraduationCap}
+            color="success"
+            index={1}
+          />
+          
+          <StatsCard
+            title="Total de Turmas"
+            value={totalTurmas}
+            icon={School}
+            color="info"
+            index={2}
+          />
+          
+          <StatsCard
+            title="Receita Mensal"
+            value={formatMZN(monthlyRevenue)}
+            icon={DollarSign}
+            color="warning"
+            index={3}
+          />
         </div>
 
         {/* Gráficos Visuais */}
