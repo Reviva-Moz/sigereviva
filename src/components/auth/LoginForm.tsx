@@ -13,10 +13,23 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if account is locked
+    if (lockoutUntil && new Date() < lockoutUntil) {
+      const remainingMinutes = Math.ceil((lockoutUntil.getTime() - new Date().getTime()) / 60000);
+      toast({
+        title: "Conta bloqueada",
+        description: `Muitas tentativas falhadas. Tente novamente em ${remainingMinutes} minuto(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!email || !password) {
       toast({
@@ -29,17 +42,32 @@ export function LoginForm() {
 
     try {
       await login({ email, password });
+      setFailedAttempts(0);
+      setLockoutUntil(null);
       toast({
         title: "Bem-vindo ao SGE REVIVA!",
         description: "Login realizado com sucesso.",
         variant: "default",
       });
     } catch (error) {
-      toast({
-        title: "Erro no login",
-        description: "Credenciais inválidas. Tente novamente.",
-        variant: "destructive",
-      });
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      
+      if (newAttempts >= 5) {
+        const lockoutTime = new Date(Date.now() + 15 * 60 * 1000);
+        setLockoutUntil(lockoutTime);
+        toast({
+          title: "Conta bloqueada",
+          description: "Muitas tentativas falhadas. Conta bloqueada por 15 minutos.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro no login",
+          description: `Credenciais inválidas. ${5 - newAttempts} tentativa(s) restante(s).`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -126,7 +154,7 @@ export function LoginForm() {
               <Button
                 type="submit"
                 className="w-full btn-hero"
-                disabled={isLoading}
+                disabled={isLoading || (lockoutUntil !== null && new Date() < lockoutUntil)}
               >
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>

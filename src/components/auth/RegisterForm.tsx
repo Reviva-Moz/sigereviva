@@ -18,10 +18,23 @@ export function RegisterForm() {
   const [role, setRole] = useState<UserRole>('PROFESSOR');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationAttempts, setRegistrationAttempts] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState<Date | null>(null);
   const { register, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check cooldown period
+    if (cooldownUntil && new Date() < cooldownUntil) {
+      const remainingSeconds = Math.ceil((cooldownUntil.getTime() - new Date().getTime()) / 1000);
+      toast({
+        title: "Aguarde",
+        description: `Por favor, aguarde ${remainingSeconds} segundo(s) antes de tentar novamente.`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!name || !email || !password || !confirmPassword) {
       toast({
@@ -52,12 +65,24 @@ export function RegisterForm() {
 
     try {
       await register({ name, email, password, role });
+      setRegistrationAttempts(0);
+      setCooldownUntil(null);
       toast({
         title: "Conta criada com sucesso!",
         description: "Verifique seu email para confirmar a conta.",
         variant: "default",
       });
     } catch (error: any) {
+      const newAttempts = registrationAttempts + 1;
+      setRegistrationAttempts(newAttempts);
+      
+      // Exponential backoff: 30s, 60s, 120s
+      if (newAttempts >= 3) {
+        const cooldownSeconds = Math.min(30 * Math.pow(2, newAttempts - 3), 300);
+        const cooldownTime = new Date(Date.now() + cooldownSeconds * 1000);
+        setCooldownUntil(cooldownTime);
+      }
+      
       toast({
         title: "Erro no cadastro",
         description: error.message || "Erro ao criar conta. Tente novamente.",
@@ -218,7 +243,7 @@ export function RegisterForm() {
               <Button
                 type="submit"
                 className="w-full btn-hero"
-                disabled={isLoading}
+                disabled={isLoading || (cooldownUntil !== null && new Date() < cooldownUntil)}
               >
                 {isLoading ? "Criando conta..." : "Criar Conta"}
               </Button>
