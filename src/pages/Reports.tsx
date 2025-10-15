@@ -97,8 +97,8 @@ export default function Reports() {
   ];
 
   const handleGenerateReport = () => {
-    console.log('Gerando relatório:', reportType, startDate, endDate);
-    // Implementar geração de relatório
+    // TODO: Implementar geração de relatório
+    // Placeholder para desenvolvimento futuro
   };
 
   return (

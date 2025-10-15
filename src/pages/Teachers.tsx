@@ -27,14 +27,13 @@ export default function Teachers() {
   const { data: teachers, isLoading } = useTeachers();
   const deleteTeacher = useDeleteTeacher();
 
-  // Buscar perfis e escolas para o formulário
+  // Buscar perfis para o formulário
   const { data: profiles } = useSupabaseQuery(
     ['profiles'],
     async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'PROFESSOR')
         .order('full_name');
       return { data, error };
     }
@@ -71,7 +70,11 @@ export default function Teachers() {
           description: 'Professor excluído com sucesso',
         });
       } catch (error) {
-        console.error('Erro ao excluir professor:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao excluir professor',
+          variant: 'destructive',
+        });
       }
     }
   };

@@ -101,7 +101,11 @@ export default function Enrollments() {
       setIsDialogOpen(false);
       form.reset();
     } catch (error) {
-      console.error('Erro ao criar matrícula:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao criar matrícula',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -114,7 +118,11 @@ export default function Enrollments() {
           description: 'Matrícula cancelada com sucesso',
         });
       } catch (error) {
-        console.error('Erro ao deletar matrícula:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao cancelar matrícula',
+          variant: 'destructive',
+        });
       }
     }
   };

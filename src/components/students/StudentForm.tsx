@@ -16,6 +16,7 @@ import { Student } from '@/types/database';
 import { useCreateStudent, useUpdateStudent } from '@/hooks/useStudents';
 import { MozambiqueInput } from '@/components/shared/MozambiqueInput';
 import { biValidator, phoneValidator } from '@/lib/validators/mozambique';
+import { useUserSchool } from '@/hooks/useUserSchool';
 
 const studentSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -46,6 +47,7 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
 
   const createStudentMutation = useCreateStudent();
   const updateStudentMutation = useUpdateStudent();
+  const { data: userSchoolId, isLoading: isLoadingSchool } = useUserSchool();
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -94,7 +96,11 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
       .upload(filePath, file, { upsert: true });
 
     if (error) {
-      console.error('Error uploading photo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao fazer upload da foto',
+        variant: 'destructive',
+      });
       return null;
     }
 
@@ -105,16 +111,17 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
     return data.publicUrl;
   };
 
-  const generateStudentNumber = async (): Promise<string> => {
-    // For now, use a default school ID. In a real app, this would come from context
-    const defaultSchoolId = '00000000-0000-0000-0000-000000000000';
-    
+  const generateStudentNumber = async (schoolId: string): Promise<string> => {
     const { data, error } = await supabase.rpc('generate_student_number', {
-      school_id_param: defaultSchoolId
+      school_id_param: schoolId
     });
 
     if (error) {
-      console.error('Error generating student number:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao gerar número de educando',
+        variant: 'destructive',
+      });
       return Date.now().toString(); // Fallback
     }
 
@@ -122,6 +129,15 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
   };
 
   const onSubmit = async (data: StudentFormData) => {
+    if (!userSchoolId) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível identificar a escola do usuário',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -145,8 +161,7 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
         });
       } else {
         // Create new student
-        const studentNumber = await generateStudentNumber();
-        const defaultSchoolId = '00000000-0000-0000-0000-000000000000';
+        const studentNumber = await generateStudentNumber(userSchoolId);
 
         const newStudent = await createStudentMutation.mutateAsync({
           full_name: data.full_name,
@@ -160,7 +175,7 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
           emergency_contact_phone: data.emergency_contact_phone || null,
           health_info: data.health_info || null,
           student_number: studentNumber,
-          school_id: defaultSchoolId,
+          school_id: userSchoolId,
           photo_url: '',
           status: 'ATIVO',
           enrollment_date: new Date().toISOString().split('T')[0],
@@ -184,7 +199,11 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
 
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving student:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar educando',
+        variant: 'destructive',
+      });
     } finally {
       setIsUploading(false);
     }
@@ -364,7 +383,7 @@ export function StudentForm({ student, onSuccess, onCancel }: StudentFormProps) 
           <div className="flex flex-col sm:flex-row gap-3 pt-6">
             <Button
               type="submit"
-              disabled={isUploading || createStudentMutation.isPending || updateStudentMutation.isPending}
+              disabled={isUploading || createStudentMutation.isPending || updateStudentMutation.isPending || isLoadingSchool}
               className="sm:ml-auto"
             >
               {(isUploading || createStudentMutation.isPending || updateStudentMutation.isPending) && (

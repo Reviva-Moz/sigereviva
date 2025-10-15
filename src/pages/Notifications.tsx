@@ -51,7 +51,11 @@ export default function Notifications() {
         description: 'Notificação marcada como lida',
       });
     } catch (error) {
-      console.error('Erro ao marcar notificação:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao marcar notificação como lida',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -63,7 +67,11 @@ export default function Notifications() {
         description: 'Notificação eliminada',
       });
     } catch (error) {
-      console.error('Erro ao eliminar notificação:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao eliminar notificação',
+        variant: 'destructive',
+      });
     }
   };
 

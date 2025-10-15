@@ -86,7 +86,11 @@ export function TeacherForm({ teacher, profiles, schools, onSuccess, onCancel }:
 
       onSuccess?.();
     } catch (error) {
-      console.error('Erro ao salvar professor:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar professor',
+        variant: 'destructive',
+      });
     }
   };
 

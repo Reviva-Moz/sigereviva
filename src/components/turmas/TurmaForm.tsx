@@ -75,7 +75,11 @@ export function TurmaForm({ turma, classes, academicYears, onSuccess, onCancel }
 
       onSuccess?.();
     } catch (error) {
-      console.error('Erro ao salvar turma:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar turma',
+        variant: 'destructive',
+      });
     }
   };
 

@@ -64,7 +64,11 @@ export default function Turmas() {
           description: 'Turma excluída com sucesso',
         });
       } catch (error) {
-        console.error('Erro ao excluir turma:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao excluir turma',
+          variant: 'destructive',
+        });
       }
     }
   };

@@ -104,7 +104,11 @@ export default function Subjects() {
       setIsDialogOpen(false);
       form.reset();
     } catch (error) {
-      console.error('Erro ao salvar disciplina:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar disciplina',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -117,7 +121,11 @@ export default function Subjects() {
           description: 'Disciplina eliminada com sucesso',
         });
       } catch (error) {
-        console.error('Erro ao eliminar disciplina:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao eliminar disciplina',
+          variant: 'destructive',
+        });
       }
     }
   };

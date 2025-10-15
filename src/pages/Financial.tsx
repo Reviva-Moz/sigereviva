@@ -142,7 +142,11 @@ export default function Financial() {
       setIsDialogOpen(false);
       form.reset();
     } catch (error) {
-      console.error('Erro ao criar registo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao criar registo financeiro',
+        variant: 'destructive',
+      });
     }
   };
 
