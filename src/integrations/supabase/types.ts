@@ -151,6 +151,7 @@ export type Database = {
           notes: string | null
           payment_date: string | null
           payment_method: string | null
+          school_id: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           student_id: string
           updated_at: string
@@ -166,6 +167,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string | null
           payment_method?: string | null
+          school_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           student_id: string
           updated_at?: string
@@ -181,6 +183,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string | null
           payment_method?: string | null
+          school_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           student_id?: string
           updated_at?: string
@@ -640,6 +643,22 @@ export type Database = {
         Args: { _user_id: string }
         Returns: {
           assignment_id: string
+        }[]
+      }
+      get_teacher_data: {
+        Args: { _teacher_id: string }
+        Returns: {
+          created_at: string
+          employee_number: string
+          hire_date: string
+          id: string
+          profile_id: string
+          qualification: string
+          salary: number
+          school_id: string
+          specialization: string
+          status: string
+          updated_at: string
         }[]
       }
       get_user_role: {

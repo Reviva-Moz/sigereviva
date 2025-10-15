@@ -13,6 +13,7 @@ import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery'
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/useStudents';
+import { useUserSchool } from '@/hooks/useUserSchool';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,6 +54,7 @@ export default function Financial() {
   
   const { toast } = useToast();
   const { data: students } = useStudents();
+  const { data: userSchoolId } = useUserSchool();
 
   const { data: financialRecords, isLoading } = useSupabaseQuery(
     ['financial_records'],
@@ -120,7 +122,27 @@ export default function Financial() {
   }, [financialRecords]);
 
   const onSubmit = async (data: FinancialFormData) => {
+    if (!userSchoolId) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível identificar a escola do usuário',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
+      // Buscar school_id do estudante
+      const student = students?.find(s => s.id === data.student_id);
+      if (!student) {
+        toast({
+          title: 'Erro',
+          description: 'Estudante não encontrado',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       await createRecord.mutateAsync({
         student_id: data.student_id,
         academic_year_id: data.academic_year_id,
@@ -131,6 +153,7 @@ export default function Financial() {
         payment_method: data.payment_method || null,
         status: data.status,
         notes: data.notes || null,
+        school_id: student.school_id,
         created_by: (await supabase.auth.getUser()).data.user?.id,
       });
       
