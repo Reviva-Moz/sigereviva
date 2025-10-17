@@ -54,10 +54,47 @@ export function RegisterForm() {
       return;
     }
 
-    if (password.length < 6) {
+    // Requisitos fortes de senha para proteção de dados escolares
+    if (password.length < 10) {
       toast({
-        title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres.",
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 10 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha deve conter pelo menos uma letra maiúscula.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha deve conter pelo menos uma letra minúscula.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha deve conter pelo menos um número.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha deve conter pelo menos um caractere especial (!@#$%^&*).",
         variant: "destructive",
       });
       return;
@@ -189,7 +226,7 @@ export function RegisterForm() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Digite sua senha"
+                    placeholder="Min. 10 caracteres, maiúsculas, números e especiais"
                     className="pl-10 pr-10"
                     disabled={isLoading}
                   />
