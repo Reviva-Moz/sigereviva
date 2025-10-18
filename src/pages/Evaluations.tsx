@@ -3,61 +3,50 @@ import { motion } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ClipboardList, Plus, Download, TrendingUp, Award, AlertCircle } from 'lucide-react';
+import { ClipboardList, Plus, Download, TrendingUp, Award, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import { getGradeClassification } from '@/lib/validators/mozambique';
-
-interface Evaluation {
-  id: string;
-  studentName: string;
-  subject: string;
-  trimester: number;
-  grade: number;
-  date: string;
-}
-
-// Mock data
-const mockEvaluations: Evaluation[] = [
-  { id: '1', studentName: 'Ana Maria Silva', subject: 'Matemática', trimester: 1, grade: 16.5, date: '2025-03-15' },
-  { id: '2', studentName: 'Ana Maria Silva', subject: 'Português', trimester: 1, grade: 14.0, date: '2025-03-14' },
-  { id: '3', studentName: 'Carlos Alberto Mendes', subject: 'Matemática', trimester: 1, grade: 12.5, date: '2025-03-15' },
-  { id: '4', studentName: 'Carlos Alberto Mendes', subject: 'Biologia', trimester: 1, grade: 18.0, date: '2025-03-16' },
-  { id: '5', studentName: 'Maria José Costa', subject: 'Física', trimester: 1, grade: 8.5, date: '2025-03-17' },
-];
+import { useEvaluations, useEvaluationStats, useDeleteEvaluation } from '@/hooks/useEvaluations';
+import { EvaluationForm } from '@/components/evaluations/EvaluationForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Evaluations() {
-  const [selectedTrimester, setSelectedTrimester] = useState<string>('all');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [selectedTrimester, setSelectedTrimester] = useState<number | undefined>(undefined);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newEvaluation, setNewEvaluation] = useState({
-    studentName: '',
-    subject: '',
-    trimester: '1',
-    grade: '',
-  });
+  const [editingEvaluation, setEditingEvaluation] = useState<any>(null);
 
-  const filteredEvaluations = mockEvaluations.filter((evaluation) => {
-    const matchesTrimester = selectedTrimester === 'all' || evaluation.trimester.toString() === selectedTrimester;
-    const matchesSubject = selectedSubject === 'all' || evaluation.subject === selectedSubject;
-    return matchesTrimester && matchesSubject;
-  });
+  // Buscar atribuições do professor
+  const { data: teacherAssignments = [] } = useSupabaseQuery(
+    ['teacher-assignments', user?.id],
+    async () => {
+      const { data, error } = await supabase
+        .from('teacher_assignments')
+        .select(`
+          id,
+          subjects(subject_name),
+          turmas(turma_name)
+        `);
+      return { data, error };
+    }
+  );
 
-  // Calcular estatísticas
-  const averageGrade = filteredEvaluations.length > 0
-    ? filteredEvaluations.reduce((sum, e) => sum + e.grade, 0) / filteredEvaluations.length
-    : 0;
+  const { data: evaluations = [], isLoading } = useEvaluations({ trimester: selectedTrimester });
+  const { data: stats } = useEvaluationStats({ trimester: selectedTrimester });
+  const deleteEvaluation = useDeleteEvaluation();
 
-  const passedCount = filteredEvaluations.filter(e => e.grade >= 10).length;
-  const passRate = filteredEvaluations.length > 0
-    ? (passedCount / filteredEvaluations.length) * 100
-    : 0;
-
-  const excellentCount = filteredEvaluations.filter(e => e.grade >= 16).length;
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja eliminar esta avaliação?')) {
+      await deleteEvaluation.mutateAsync(id);
+    }
+  };
 
   return (
     <MainLayout title="Avaliações e Notas" subtitle="Sistema de avaliação moçambicano (0-20)">
@@ -71,7 +60,7 @@ export default function Evaluations() {
                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{filteredEvaluations.length}</div>
+                <div className="text-2xl font-bold">{stats?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">Este trimestre</p>
               </CardContent>
             </Card>
@@ -84,7 +73,7 @@ export default function Evaluations() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{averageGrade.toFixed(1)}</div>
+                <div className="text-2xl font-bold">{stats?.average.toFixed(1) || '0.0'}</div>
                 <p className="text-xs text-muted-foreground">Escala 0-20</p>
               </CardContent>
             </Card>
@@ -97,8 +86,8 @@ export default function Evaluations() {
                 <Award className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{passRate.toFixed(1)}%</div>
-                <p className="text-xs text-muted-foreground">{passedCount} aprovados</p>
+                <div className="text-2xl font-bold text-green-600">{stats?.passRate.toFixed(1) || '0.0'}%</div>
+                <p className="text-xs text-muted-foreground">{stats?.passed || 0} aprovados</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -110,7 +99,7 @@ export default function Evaluations() {
                 <Award className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{excellentCount}</div>
+                <div className="text-2xl font-bold text-yellow-600">{stats?.excellent || 0}</div>
                 <p className="text-xs text-muted-foreground">Notas ≥ 16</p>
               </CardContent>
             </Card>
@@ -120,7 +109,10 @@ export default function Evaluations() {
         {/* Filtros e Ações */}
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4">
-            <Select value={selectedTrimester} onValueChange={setSelectedTrimester}>
+            <Select 
+              value={selectedTrimester?.toString() || 'all'} 
+              onValueChange={(value) => setSelectedTrimester(value === 'all' ? undefined : parseInt(value))}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Selecionar trimestre" />
               </SelectTrigger>
@@ -129,21 +121,6 @@ export default function Evaluations() {
                 <SelectItem value="1">1º Trimestre</SelectItem>
                 <SelectItem value="2">2º Trimestre</SelectItem>
                 <SelectItem value="3">3º Trimestre</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Selecionar disciplina" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as disciplinas</SelectItem>
-                <SelectItem value="Matemática">Matemática</SelectItem>
-                <SelectItem value="Português">Português</SelectItem>
-                <SelectItem value="Biologia">Biologia</SelectItem>
-                <SelectItem value="Física">Física</SelectItem>
-                <SelectItem value="Química">Química</SelectItem>
-                <SelectItem value="História">História</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -161,67 +138,12 @@ export default function Evaluations() {
                   Lançar Nota
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Lançar Nova Avaliação</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label>Educando</Label>
-                    <Input
-                      placeholder="Nome do educando"
-                      value={newEvaluation.studentName}
-                      onChange={(e) => setNewEvaluation({ ...newEvaluation, studentName: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Disciplina</Label>
-                    <Select
-                      value={newEvaluation.subject}
-                      onValueChange={(value) => setNewEvaluation({ ...newEvaluation, subject: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar disciplina" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Matemática">Matemática</SelectItem>
-                        <SelectItem value="Português">Português</SelectItem>
-                        <SelectItem value="Biologia">Biologia</SelectItem>
-                        <SelectItem value="Física">Física</SelectItem>
-                        <SelectItem value="Química">Química</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Trimestre</Label>
-                    <Select
-                      value={newEvaluation.trimester}
-                      onValueChange={(value) => setNewEvaluation({ ...newEvaluation, trimester: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1º Trimestre</SelectItem>
-                        <SelectItem value="2">2º Trimestre</SelectItem>
-                        <SelectItem value="3">3º Trimestre</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Nota (0-20)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="20"
-                      step="0.5"
-                      placeholder="0.0"
-                      value={newEvaluation.grade}
-                      onChange={(e) => setNewEvaluation({ ...newEvaluation, grade: e.target.value })}
-                    />
-                  </div>
-                  <Button className="w-full">Salvar Avaliação</Button>
-                </div>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <EvaluationForm
+                  teacherAssignments={teacherAssignments}
+                  onSuccess={() => setIsAddDialogOpen(false)}
+                  onCancel={() => setIsAddDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -230,52 +152,90 @@ export default function Evaluations() {
         {/* Tabela de Avaliações */}
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Educando</TableHead>
-                  <TableHead>Disciplina</TableHead>
-                  <TableHead>Trimestre</TableHead>
-                  <TableHead>Nota</TableHead>
-                  <TableHead>Classificação</TableHead>
-                  <TableHead>Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvaluations.map((evaluation, index) => {
-                  const classification = getGradeClassification(evaluation.grade);
-                  return (
-                    <motion.tr
-                      key={evaluation.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.02 }}
-                      className="hover:bg-muted/30"
-                    >
-                      <TableCell className="font-medium">{evaluation.studentName}</TableCell>
-                      <TableCell>{evaluation.subject}</TableCell>
-                      <TableCell>{evaluation.trimester}º Trimestre</TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${classification.color}`}>
-                          {evaluation.grade.toFixed(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={classification.passed ? 'default' : 'destructive'}
-                          className={classification.passed ? 'bg-green-500' : ''}
-                        >
-                          {classification.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(evaluation.date).toLocaleDateString('pt-MZ')}
-                      </TableCell>
-                    </motion.tr>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+            ) : evaluations.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Nenhuma avaliação registada
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Educando</TableHead>
+                    <TableHead>Disciplina</TableHead>
+                    <TableHead>Trimestre</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Nota</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {evaluations.map((evaluation, index) => {
+                    const classification = getGradeClassification(evaluation.grade);
+                    return (
+                      <motion.tr
+                        key={evaluation.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.02 }}
+                        className="hover:bg-muted/30"
+                      >
+                        <TableCell className="font-medium">
+                          {evaluation.students?.full_name || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {evaluation.teacher_assignments?.subjects?.subject_name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{evaluation.trimester}º Trimestre</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{evaluation.evaluation_type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-bold ${classification.color}`}>
+                            {evaluation.grade.toFixed(1)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={classification.passed ? 'default' : 'destructive'}
+                            className={classification.passed ? 'bg-green-500' : ''}
+                          >
+                            {classification.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(evaluation.evaluation_date).toLocaleDateString('pt-MZ')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingEvaluation(evaluation);
+                                setIsAddDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(evaluation.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </motion.tr>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 

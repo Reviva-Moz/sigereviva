@@ -139,6 +139,63 @@ export type Database = {
           },
         ]
       }
+      evaluations: {
+        Row: {
+          created_at: string
+          created_by: string
+          evaluation_date: string
+          evaluation_type: string
+          grade: number
+          id: string
+          notes: string | null
+          student_id: string
+          teacher_assignment_id: string
+          trimester: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          evaluation_date?: string
+          evaluation_type?: string
+          grade: number
+          id?: string
+          notes?: string | null
+          student_id: string
+          teacher_assignment_id: string
+          trimester: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          evaluation_date?: string
+          evaluation_type?: string
+          grade?: number
+          id?: string
+          notes?: string | null
+          student_id?: string
+          teacher_assignment_id?: string
+          trimester?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_teacher_assignment_id_fkey"
+            columns: ["teacher_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_records: {
         Row: {
           academic_year_id: string
@@ -211,6 +268,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
